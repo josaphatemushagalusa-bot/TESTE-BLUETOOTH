@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ESP32 Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; }
+        button { padding: 15px 30px; margin: 10px; font-size: 16px; cursor: pointer; border-radius: 8px; border: none; }
+        .on { background: #4CAF50; color: white; }
+        .off { background: #f44336; color: white; }
+        .connect { background: #008CBA; color: white; }
+    </style>
+</head>
+<body>
+
+    <h2>Contrôle ESP32</h2>
+    <button class="connect" onclick="connectBLE()">1. Se Connecter</button>
+    <br>
+    <button class="on" onclick="sendData('1')">Allumer LED</button>
+    <button class="off" onclick="sendData('0')">Éteindre LED</button>
+
+    <script>
+        let deviceCache = null;
+        let charCache = null;
+
+        async function connectBLE() {
+            try {
+                console.log("Recherche d'appareil...");
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'ESP32_TEST' }],
+                    optionalServices: ['4fafc201-1fb5-459e-8fcc-c5c9c331914b']
+                });
+
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService('4fafc201-1fb5-459e-8fcc-c5c9c331914b');
+                charCache = await service.getCharacteristic('beb5483e-36e1-4688-b7f5-ea07361b26a8');
+                
+                alert("Connecté à l'ESP32 !");
+            } catch (error) {
+                alert("Erreur de connexion : " + error);
+            }
+        }
+
+        async function sendData(value) {
+            if (!charCache) {
+                alert("Connectez-vous d'abord !");
+                return;
+            }
+            const data = new TextEncoder().encode(value);
+            await charCache.writeValue(data);
+        }
+    </script>
+</body>
+</html>
